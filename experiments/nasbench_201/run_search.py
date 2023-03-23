@@ -94,7 +94,7 @@ if __name__ == '__main__':
     parser.add_argument('--runs', type=int, default=3)
     parser.add_argument('--pretraining', type=bool, default=True)
     parser.add_argument('--accelerator', type=str, default='gpu')
-    parser.add_argument('--n_threads', type=int, default=6)
+    parser.add_argument('--threads', type=int, default=6)
     parser.add_argument('--datasets', type=str, nargs='+', default=['cifar10', 'cifar100', 'ImageNet16-120'])
     args = parser.parse_args()
 
