@@ -74,7 +74,7 @@ class Ensemble:
                     self.pretrain_modules.append(module)
                     self.pretrain_optimizers.append(optimizer)
 
-    def pretrain_multi_gpu(self):
+    def pretrain_gpu(self):
         train_set = TensorDataset(self.pretrain_configs, *self.pretrain_metrics)
         train_loader = DataLoader(train_set, batch_size=self.pretrain_bs, shuffle=True, num_workers=0)
 
@@ -108,24 +108,24 @@ class Ensemble:
                 
 
 
-    def pretrain_gpu(self):
-        train_set = TensorDataset(self.pretrain_configs, *self.pretrain_metrics)
-        train_loader = DataLoader(train_set, batch_size=self.pretrain_bs, shuffle=True, num_workers=0)
+    # def pretrain_gpu(self):
+    #     train_set = TensorDataset(self.pretrain_configs, *self.pretrain_metrics)
+    #     train_loader = DataLoader(train_set, batch_size=self.pretrain_bs, shuffle=True, num_workers=0)
 
-        device = torch.device("cuda")
+    #     device = torch.device("cuda")
 
-        for module, optimizer in zip(self.pretrain_modules, self.pretrain_optimizers):
-            module.to(device)
-            for _ in tqdm(range(self.pretrain_epochs)):
-                for batch_idx, batch in enumerate(train_loader):
-                    optimizer.zero_grad()
-                    preds = module(batch[0].to(device))
-                    loss = 0
-                    for i in range(1, len(batch)):
-                        loss += nn.functional.huber_loss(input=preds[i - 1].to(device), target=batch[i].to(device).view(preds[i - 1].shape))
-                    loss.backward()
-                    optimizer.step()
-            module.to(torch.device('cpu'))
+    #     for module, optimizer in zip(self.pretrain_modules, self.pretrain_optimizers):
+    #         module.to(device)
+    #         for _ in tqdm(range(self.pretrain_epochs)):
+    #             for batch_idx, batch in enumerate(train_loader):
+    #                 optimizer.zero_grad()
+    #                 preds = module(batch[0].to(device))
+    #                 loss = 0
+    #                 for i in range(1, len(batch)):
+    #                     loss += nn.functional.huber_loss(input=preds[i - 1].to(device), target=batch[i].to(device).view(preds[i - 1].shape))
+    #                 loss.backward()
+    #                 optimizer.step()
+    #         module.to(torch.device('cpu'))
 
 
     def pretrain(self):
