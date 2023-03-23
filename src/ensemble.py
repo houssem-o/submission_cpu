@@ -96,8 +96,7 @@ class Ensemble:
             res = parallel(
                 delayed(pretrain_module)(
                     module,
-                    optimizer,
-                    cuda_device
+                    optimizer
                     )
                     for module, optimizer in zip(self.pretrain_modules, self.pretrain_optimizers)
                 )
