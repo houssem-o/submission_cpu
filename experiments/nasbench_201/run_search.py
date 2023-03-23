@@ -5,6 +5,8 @@ import numpy as np
 np.random.seed(0)
 import pickle
 import argparse
+from os import mkdir
+from os.path import exists
 
 from src.ensemble import Ensemble
 from src.search import BenchSearch
@@ -25,13 +27,13 @@ def encoder_generator_func_():
                          nn.SiLU())
 
 
-def one_run(run_name, evals_filename, metrics_filename, bench_optimum, pretrain=True, plot_logs=True):
+def one_run(accel, threads, run_name, evals_filename, metrics_filename, bench_optimum, pretrain=True, plot_logs=True):
     # Ensemble instance and pretraining
     with open(metrics_filename, 'rb') as f:
         pretrain_configs, pretrain_metrics = pickle.load(f)
     e = Ensemble(pretrain_configs=pretrain_configs, pretrain_metrics=pretrain_metrics,
                  network_generator_func=encoder_generator_func_, embedding_dim=embedding_dim,
-                 n_networks=6, accelerator='cpu', devices=6, train_lr=5e-3,
+                 n_networks=6, accelerator=accel, devices=threads, train_lr=5e-3,
                  pretrain_epochs=1000, pretrain_lr=2e-3, pretrain_bs=2)
     if pretrain:
         e.pretrain()
@@ -58,10 +60,11 @@ def one_run(run_name, evals_filename, metrics_filename, bench_optimum, pretrain=
     return logs
 
 
-def multiple_runs(xp_name, evals_filename, metrics_filename, bench_optimum, pretrain=True, n_runs=10):
+def multiple_runs(accel, threads, xp_name, evals_filename, metrics_filename, bench_optimum, pretrain=True, n_runs=10):
     logs_list = []
     for i in range(n_runs):
-        logs_list.append(one_run(run_name=f'{xp_name}_{i}', evals_filename=evals_filename,
+        logs_list.append(one_run(accel=accel, threads=threads,
+                                 run_name=f'{xp_name}_{i}', evals_filename=evals_filename,
                                  metrics_filename=metrics_filename,
                                  bench_optimum=bench_optimum,
                                  pretrain=pretrain, plot_logs=False))
@@ -80,16 +83,26 @@ def get_average_index_optimum_reached(lst):
         return None
     return np.mean(clean_list), n_fails
 
+def create_dir_if_not_existing(path):
+    if not exists(path):
+        mkdir(path)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--experiment-name', type=str, default='nb201_pretrained')
     parser.add_argument('--runs', type=int, default=3)
     parser.add_argument('--pretraining', type=bool, default=True)
+    parser.add_argument('--accelerator', type=str, default='gpu')
+    parser.add_argument('--n_threads', type=int, default=6)
     parser.add_argument('--datasets', type=str, nargs='+', default=['cifar10', 'cifar100', 'ImageNet16-120'])
     args = parser.parse_args()
 
-    xp_name, n_runs, pretrain, datasets = args.experiment_name, args.runs, args.pretraining, args.datasets
+    create_dir_if_not_existing('experiments/nasbench_201/plots')
+    create_dir_if_not_existing('experiments/nasbench_201/logs')
+
+    accel, threads, xp_name = args.accelerator, args.threads, args.experiment_name
+    n_runs, pretrain, datasets = args.runs, args.pretraining, args.datasets
 
     bench_optima = {'cifar10': 0.9437, 'cifar100': 0.7351, 'ImageNet16-120': 0.4731}
 
@@ -97,7 +110,8 @@ if __name__ == '__main__':
     for d in datasets:
         evals_filename = f'experiments/nasbench_201/pretraining_data/nats_tss_{d}_evals.pickle'
         metrics_filename = f'experiments/nasbench_201/pretraining_data/nats_tss_{d}_metrics.pickle'
-        logs[d] = multiple_runs(xp_name=xp_name, evals_filename=evals_filename,
+        logs[d] = multiple_runs(accel=accel, threads=threads,
+                                xp_name=xp_name, evals_filename=evals_filename,
                                 metrics_filename=metrics_filename,
                                 bench_optimum=bench_optima[d],
                                 pretrain=pretrain, n_runs=n_runs)
