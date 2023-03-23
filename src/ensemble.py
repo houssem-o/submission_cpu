@@ -45,7 +45,7 @@ class Ensemble:
         self.pretrain_optimizers = [torch.optim.Adam(module.parameters(), lr=self.pretrain_lr) for module in
                                     self.pretrain_modules]
 
-    def pretrain(self):
+    def pretrain_cpu(self):
         train_set = TensorDataset(self.pretrain_configs, *self.pretrain_metrics)
         train_loader = DataLoader(train_set, batch_size=self.pretrain_bs, shuffle=True, num_workers=0)
 
@@ -74,12 +74,40 @@ class Ensemble:
                     self.pretrain_modules.append(module)
                     self.pretrain_optimizers.append(optimizer)
 
+
+
+
+    def pretrain_gpu(self):
+        train_set = TensorDataset(self.pretrain_configs, *self.pretrain_metrics)
+        train_loader = DataLoader(train_set, batch_size=self.pretrain_bs, shuffle=True, num_workers=0)
+
+        device = torch.device("cuda")
+
+        for module, optimizer in zip(self.pretrain_modules, self.pretrain_optimizers):
+            module.to(device)
+            for _ in tqdm(range(self.pretrain_epochs)):
+                for batch_idx, batch in enumerate(train_loader):
+                    optimizer.zero_grad()
+                    preds = module(batch[0].to(device))
+                    loss = 0
+                    for i in range(1, len(batch)):
+                        loss += nn.functional.huber_loss(input=preds[i - 1].to(device), target=batch[i].to(device).view(preds[i - 1].shape))
+                    loss.backward()
+                    optimizer.step()
+
+
+    def pretrain(self):
+        if self.accelerator == 'cpu':
+            self.pretrain_cpu()
+        elif self.accelerator == 'gpu':
+            self.pretrain_gpu()
         # Restore self.networks and self.optimizers
         self.networks = [
             nn.Sequential(module.get_submodule('encoder'), nn.Linear(self.embedding_dim, 1))
             for module in self.pretrain_modules
         ]
         self.optimizers = [torch.optim.Adam(net.parameters(), lr=self.pretrain_lr) for net in self.networks]
+        
 
     def train(self, input_data, target_data, epochs, bs=16):
         train_set = TensorDataset(input_data, target_data)
