@@ -1,15 +1,15 @@
 import torch
-
 torch.manual_seed(0)
 import torch.nn as nn
 import numpy as np
-
 np.random.seed(0)
 import pickle
+import argparse
 
 from src.ensemble import Ensemble
 from src.search import BenchSearch
-from src.logs_utils import plot_average_logs_multiple_experiments
+from src.explore_logs import *
+
 
 embedding_dim = 512
 
@@ -82,62 +82,90 @@ def get_average_index_optimum_reached(lst):
 
 
 if __name__ == '__main__':
-    n_runs_no_pretraining, n_runs_pretrained = 10, 10
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--experiment-name', type=str, default='nb201_pretrained')
+    parser.add_argument('--runs', type=int, default=3)
+    parser.add_argument('--pretraining', type=bool, default=True)
+    parser.add_argument('--datasets', type=str, nargs='+', default=['cifar10', 'cifar100', 'ImageNet16-120'])
+    args = parser.parse_args()
 
-    datasets = ['cifar10', 'cifar100', 'ImageNet16-120']
+    xp_name, n_runs, pretrain, datasets = args.experiment_name, args.runs, args.pretraining, args.datasets
+
     bench_optima = {'cifar10': 0.9437, 'cifar100': 0.7351, 'ImageNet16-120': 0.4731}
-    best_val_no_pretraining = {}
-    best_val_pretraining = {}
-    last_spearman_coeff_no_pretraining = {}
-    last_spearman_coeff_pretraining = {}
-    avg_idx_no_pretraining = {}
-    avg_idx_pretraining = {}
+
+    logs = dict()
     for d in datasets:
-        xp_name_0 = f'nb201_{d}_no_pretraining'
-        evals_filename_0 = f'pretraining_data/nats_tss_{d}_evals.pickle'
-        metrics_filename_0 = f'pretraining_data/nats_tss_{d}_metrics.pickle'
-        logs_list_0 = multiple_runs(xp_name=xp_name_0, evals_filename=evals_filename_0,
-                                    metrics_filename=metrics_filename_0,
-                                    bench_optimum=bench_optima[d],
-                                    pretrain=False, n_runs=n_runs_no_pretraining)
-        best_val_no_pretraining[d] = np.array([l[-1]['current_best'] for l in logs_list_0]).mean()
-        last_spearman_coeff_no_pretraining[d] = np.array(
-            [l[-1]['correlations'][0].correlation for l in logs_list_0]).mean()
-        avg_idx_no_pretraining[d] = get_average_index_optimum_reached(logs_list_0)
+        evals_filename = f'experiments/nasbench_201/pretraining_data/nats_tss_{d}_evals.pickle'
+        metrics_filename = f'experiments/nasbench_201/pretraining_data/nats_tss_{d}_metrics.pickle'
+        logs[d] = multiple_runs(xp_name=xp_name, evals_filename=evals_filename,
+                                metrics_filename=metrics_filename,
+                                bench_optimum=bench_optima[d],
+                                pretrain=pretrain, n_runs=n_runs)
 
-        xp_name_1 = f'nb201_{d}_pretrained'
-        evals_filename_1 = f'pretraining_data/nats_tss_{d}_evals.pickle'
-        metrics_filename_1 = f'pretraining_data/nats_tss_{d}_metrics.pickle'
-        logs_list_1 = multiple_runs(xp_name=xp_name_1, evals_filename=evals_filename_1,
-                                    metrics_filename=metrics_filename_1,
-                                    bench_optimum=bench_optima[d],
-                                    pretrain=True, n_runs=n_runs_pretrained)
-        best_val_pretraining[d] = np.array([l[-1]['current_best'] for l in logs_list_1]).mean()
-        last_spearman_coeff_pretraining[d] = np.array(
-            [l[-1]['correlations'][0].correlation for l in logs_list_1]).mean()
-
-        avg_idx_pretraining[d] = get_average_index_optimum_reached(logs_list_1)
-
-        plot_average_logs_multiple_experiments(d,
-                                               [logs_list_0, logs_list_1],
-                                               [xp_name_0, xp_name_1], True)
-
-    summary = ""
-    summary += f'NASBench-201 summary\n'
-    summary += '-' * 20 + '\n'
-    summary += f'No pretraining - {n_runs_no_pretraining} runs\n'
+    print('\nSummary')
     for d in datasets:
-        summary += f'Dataset:\t{d}\n'
-        summary += f'Best val (avg):\t{best_val_no_pretraining[d]}\n'
-        summary += f'Spearman corr. (avg):\t{last_spearman_coeff_no_pretraining[d]}\n'
-        summary += f'(Average index optimum reached, n_fails):\t{avg_idx_no_pretraining[d]}\n'
-    summary += '-' * 20 + '\n'
-    summary += f'With pretraining - {n_runs_pretrained} runs\n'
-    for d in datasets:
-        summary += f'Dataset:\t{d}\n'
-        summary += f'Best val (avg):\t{best_val_pretraining[d]}\n'
-        summary += f'Spearman corr. (avg):\t{last_spearman_coeff_pretraining[d]}\n'
-        summary += f'(Average index optimum reached, n_fails):\t{avg_idx_pretraining[d]}\n'
-    print(summary)
-    with open("summary.txt", "w") as f:
-        f.write(summary)
+        print(f'{d}\t{n_runs} runs, {'With pretraining' if pretrain else 'No pretraining'}')
+        print('Acc = {}\tRho = {}\tIdx = {}\tF = {}\n'.format(*grab_data(logs[d])))
+
+
+# Code used for generating the experiment logs
+# if __name__ == '__main__':
+#     n_runs_no_pretraining, n_runs_pretrained = 10, 10
+
+#     datasets = ['cifar10', 'cifar100', 'ImageNet16-120']
+#     bench_optima = {'cifar10': 0.9437, 'cifar100': 0.7351, 'ImageNet16-120': 0.4731}
+#     best_val_no_pretraining = {}
+#     best_val_pretraining = {}
+#     last_spearman_coeff_no_pretraining = {}
+#     last_spearman_coeff_pretraining = {}
+#     avg_idx_no_pretraining = {}
+#     avg_idx_pretraining = {}
+#     for d in datasets:
+#         xp_name_0 = f'nb201_{d}_no_pretraining'
+#         evals_filename_0 = f'experiments/nasbench_201/pretraining_data/nats_tss_{d}_evals.pickle'
+#         metrics_filename_0 = f'experiments/nasbench_201/pretraining_data/nats_tss_{d}_metrics.pickle'
+#         logs_list_0 = multiple_runs(xp_name=xp_name_0, evals_filename=evals_filename_0,
+#                                     metrics_filename=metrics_filename_0,
+#                                     bench_optimum=bench_optima[d],
+#                                     pretrain=False, n_runs=n_runs_no_pretraining)
+#         best_val_no_pretraining[d] = np.array([l[-1]['current_best'] for l in logs_list_0]).mean()
+#         last_spearman_coeff_no_pretraining[d] = np.array(
+#             [l[-1]['correlations'][0].correlation for l in logs_list_0]).mean()
+#         avg_idx_no_pretraining[d] = get_average_index_optimum_reached(logs_list_0)
+
+#         xp_name_1 = f'nb201_{d}_pretrained'
+#         evals_filename_1 = f'pretraining_data/nats_tss_{d}_evals.pickle'
+#         metrics_filename_1 = f'pretraining_data/nats_tss_{d}_metrics.pickle'
+#         logs_list_1 = multiple_runs(xp_name=xp_name_1, evals_filename=evals_filename_1,
+#                                     metrics_filename=metrics_filename_1,
+#                                     bench_optimum=bench_optima[d],
+#                                     pretrain=True, n_runs=n_runs_pretrained)
+#         best_val_pretraining[d] = np.array([l[-1]['current_best'] for l in logs_list_1]).mean()
+#         last_spearman_coeff_pretraining[d] = np.array(
+#             [l[-1]['correlations'][0].correlation for l in logs_list_1]).mean()
+
+#         avg_idx_pretraining[d] = get_average_index_optimum_reached(logs_list_1)
+
+#         plot_average_logs_multiple_experiments(d,
+#                                                [logs_list_0, logs_list_1],
+#                                                [xp_name_0, xp_name_1], True)
+
+#     summary = ""
+#     summary += f'NASBench-201 summary\n'
+#     summary += '-' * 20 + '\n'
+#     summary += f'No pretraining - {n_runs_no_pretraining} runs\n'
+#     for d in datasets:
+#         summary += f'Dataset:\t{d}\n'
+#         summary += f'Best val (avg):\t{best_val_no_pretraining[d]}\n'
+#         summary += f'Spearman corr. (avg):\t{last_spearman_coeff_no_pretraining[d]}\n'
+#         summary += f'(Average index optimum reached, n_fails):\t{avg_idx_no_pretraining[d]}\n'
+#     summary += '-' * 20 + '\n'
+#     summary += f'With pretraining - {n_runs_pretrained} runs\n'
+#     for d in datasets:
+#         summary += f'Dataset:\t{d}\n'
+#         summary += f'Best val (avg):\t{best_val_pretraining[d]}\n'
+#         summary += f'Spearman corr. (avg):\t{last_spearman_coeff_pretraining[d]}\n'
+#         summary += f'(Average index optimum reached, n_fails):\t{avg_idx_pretraining[d]}\n'
+#     print(summary)
+#     with open("summary.txt", "w") as f:
+#         f.write(summary)
