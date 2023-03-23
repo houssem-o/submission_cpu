@@ -9,7 +9,7 @@ import pickle
 
 from src.ensemble import Ensemble
 from src.search import BenchSearch
-from utils.logs_utils import plot_average_logs_multiple_experiments
+from src.logs_utils import plot_average_logs_multiple_experiments
 
 embedding_dim = 512
 

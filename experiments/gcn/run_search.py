@@ -10,7 +10,7 @@ from torch_geometric.nn import GCNConv, aggr
 
 from src.ensemble_pyg import EnsemblePyG
 from src.search_pyg import BenchSearchPyG
-from utils.logs_utils import plot_average_logs_multiple_experiments
+from src.logs_utils import plot_average_logs_multiple_experiments
 
 embedding_dim = 512
 
