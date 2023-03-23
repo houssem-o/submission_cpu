@@ -102,10 +102,15 @@ if __name__ == '__main__':
                                 bench_optimum=bench_optima[d],
                                 pretrain=pretrain, n_runs=n_runs)
 
+    snapshots = [100, 200, 400, 444]
     print('\nSummary')
     for d in datasets:
-        print(f'{d}\t{n_runs} runs, {'With pretraining' if pretrain else 'No pretraining'}')
-        print('Acc = {}\tRho = {}\tIdx = {}\tF = {}\n'.format(*grab_data(logs[d])))
+        print(f'{d}\t{n_runs} runs, {"With pretraining" if pretrain else "No pretraining"}')
+        print('Acc = {}\tRho = {}\tIdx = {}\tF = {}'.format(*grab_data(logs[d])))
+        print('Evals at optimum found: \tmin = {}\tmax = {}\tavg = {}\tstd = {}'.format(*get_index_stats(logs[d])))
+        for s in snapshots:
+            print('Snapshot at {}\t\tn_evals = {}\t\tacc = {}'.format(s, *get_values_at_x(logs[d], s)))
+        print('\n')
 
 
 # Code used for generating the experiment logs
