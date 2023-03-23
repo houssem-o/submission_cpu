@@ -129,6 +129,7 @@ class Ensemble:
 
 
     def pretrain(self):
+        print(self.accelerator, self.devices)
         if self.accelerator == 'cpu':
             self.pretrain_cpu()
         elif self.accelerator == 'gpu':
