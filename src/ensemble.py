@@ -99,8 +99,13 @@ class Ensemble:
                     optimizer,
                     cuda_device
                     )
+                    for module, optimizer in zip(self.pretrain_modules, self.pretrain_optimizers)
                 )
-                for module, optimizer in zip(self.pretrain_modules, self.pretrain_optimizers)
+            self.pretrain_modules, self.pretrain_optimizers = [], []
+            for (module, optimizer) in res:
+                self.pretrain_modules.append(module)
+                self.pretrain_optimizers.append(optimizer)
+                
 
 
     def pretrain_gpu(self):
