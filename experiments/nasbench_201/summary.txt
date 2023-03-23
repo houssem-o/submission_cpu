@@ -1,0 +1,29 @@
+NASBench-201 summary
+--------------------
+No pretraining - 10 runs
+Dataset:	cifar10
+Best val (avg):	0.9435949325561523
+Spearman corr. (avg):	0.6320864304811433
+(Average index optimum reached, n_fails):	(852.0, 2)
+Dataset:	cifar100
+Best val (avg):	0.7351332902908325
+Spearman corr. (avg):	0.6680614193038322
+(Average index optimum reached, n_fails):	(665.6, 0)
+Dataset:	ImageNet16-120
+Best val (avg):	0.473111093044281
+Spearman corr. (avg):	0.6849161922211763
+(Average index optimum reached, n_fails):	(508.8, 0)
+--------------------
+With pretraining - 10 runs
+Dataset:	cifar10
+Best val (avg):	0.9437333345413208
+Spearman corr. (avg):	0.8394284175243694
+(Average index optimum reached, n_fails):	(176.0, 0)
+Dataset:	cifar100
+Best val (avg):	0.7351332902908325
+Spearman corr. (avg):	0.8259649964204117
+(Average index optimum reached, n_fails):	(150.4, 0)
+Dataset:	ImageNet16-120
+Best val (avg):	0.473111093044281
+Spearman corr. (avg):	0.8206680951823243
+(Average index optimum reached, n_fails):	(163.2, 0)

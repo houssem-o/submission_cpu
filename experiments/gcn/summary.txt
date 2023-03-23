@@ -1,0 +1,7 @@
+NASBench-201 summary
+--------------------
+With pretraining - 5 runs
+Dataset:	cifar100
+Best val (avg):	0.7351333498954773
+Spearman corr. (avg):	0.7852925655459285
+(Average index optimum reached, n_fails):	(134.4, 0)
